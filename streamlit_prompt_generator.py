@@ -44,7 +44,7 @@ settings = {
     "scheduler": "simple"
 }
 
-# --- Advanced Subject Enhancer ---
+# --- Enhancers ---
 def rewrite_subject(subject_input, tone="default", length="medium"):
     elements = [e.strip() for e in subject_input.split(',') if e.strip()]
     appearance, clothing, modifiers = [], [], []
@@ -60,7 +60,6 @@ def rewrite_subject(subject_input, tone="default", length="medium"):
         else:
             appearance.append(word)
 
-    # Compose base
     base = "A"
     if modifiers:
         joined_mods = ", ".join(modifiers[:-1]) + (" and " + modifiers[-1] if len(modifiers) > 1 else modifiers[0])
@@ -77,7 +76,6 @@ def rewrite_subject(subject_input, tone="default", length="medium"):
     base += ", featuring " + ", ".join(random.sample(descriptors, d_count))
     base += ", and expressing " + random.choice(personality_traits) + "."
 
-    # Tone adjustment
     if tone == "elegant":
         base = base.replace("woman", "elegant woman")
     elif tone == "moody":
@@ -87,60 +85,51 @@ def rewrite_subject(subject_input, tone="default", length="medium"):
 
     return base.capitalize()
 
-# --- Prompt builders ---
-def build_prompt(subject, mood, style, tone="default", length="medium"):
-    subject_line = rewrite_subject(subject, tone, length)
+def enhance_mood(text):
+    return random.choice(mood_templates) if len(text.strip().split()) < 6 else text.strip().capitalize()
 
-    if len(mood.strip().split()) < 6:
-        mood_line = random.choice(mood_templates)
-    else:
-        mood_line = mood.strip().capitalize()
+def enhance_style(text):
+    if text.strip() == "":
+        return random.choice(style_templates)
+    elif len(text.strip().split()) < 5:
+        match = [s for s in style_templates if text.lower() in s.lower()]
+        return match[0] if match else random.choice(style_templates)
+    return text.strip().capitalize()
 
-    if style.strip() == "":
-        style_line = random.choice(style_templates)
-    elif len(style.strip().split()) < 5:
-        matching = [s for s in style_templates if style.lower() in s.lower()]
-        style_line = matching[0] if matching else random.choice(style_templates)
-    else:
-        style_line = style.strip().capitalize()
+# --- UI ---
+st.set_page_config(page_title="Flux AI Modular Prompt Generator")
+st.title("🤖 Modular Prompt Builder")
 
+# Input blocks
+st.header("1. Subject Outline")
+subject_input = st.text_input("Enter subject outline")
+tone = st.selectbox("Select tone", ["default", "elegant", "playful", "moody"])
+length = st.selectbox("Description length", ["short", "medium", "long"])
+subject_enhanced = ""
+if st.button("Enhance Subject"):
+    subject_enhanced = rewrite_subject(subject_input, tone, length)
+    st.text_area("Enhanced Subject", subject_enhanced, height=100)
+
+st.header("2. Mood / Setting")
+mood_input = st.text_input("Enter mood/setting")
+mood_enhanced = ""
+if st.button("Enhance Mood"):
+    mood_enhanced = enhance_mood(mood_input)
+    st.text_area("Enhanced Mood", mood_enhanced, height=100)
+
+st.header("3. Style / Era Reference")
+style_input = st.text_input("Enter style reference (optional)")
+style_enhanced = ""
+if st.button("Enhance Style"):
+    style_enhanced = enhance_style(style_input)
+    st.text_area("Enhanced Style", style_enhanced, height=100)
+
+# Final output
+st.header("4. Final Prompt Output")
+if subject_enhanced and mood_enhanced and style_enhanced:
     loras = ", ".join(f"<lora:{tag}>" for tag in random.choice(lora_sets))
-
-    full_prompt = f"""
-Prompt: {subject_line}\n{mood_line}\n{style_line}
-
-LoRA: {loras}
-Width: {settings['width']}, Height: {settings['height']}, Steps: {settings['steps']}, Sampler: {settings['sampler']}, Scheduler: {settings['scheduler']}
-""".strip()
-
-    return full_prompt
-
-# --- Streamlit UI ---
-st.set_page_config(page_title="Flux AI Prompt Generator")
-st.title("🤖 Flux AI Prompt Generator & Enhancer")
-
-mode = st.radio("Choose Mode:", ["Suggest Prompt", "Enhance My Prompt"])
-
-if mode == "Suggest Prompt":
-    if st.button("Generate Random Prompt"):
-        subject = "A young woman"
-        mood = random.choice(mood_templates)
-        style = random.choice(style_templates)
-        prompt = build_prompt(subject, mood, style)
-        st.text_area("Generated Prompt", prompt, height=300)
-        st.caption(f"Character count: {len(prompt)}")
-
-elif mode == "Enhance My Prompt":
-    subject_input = st.text_input("Enter subject outline")
-    mood_input = st.text_input("Enter mood/setting")
-    style_input = st.text_input("Optional: Style or era reference")
-    tone = st.selectbox("Select tone", ["default", "elegant", "playful", "moody"])
-    length = st.selectbox("Description length", ["short", "medium", "long"])
-
-    if st.button("Enhance Prompt"):
-        if subject_input and mood_input:
-            result = build_prompt(subject_input, mood_input, style_input, tone, length)
-            st.text_area("Enhanced Prompt", result, height=300)
-            st.caption(f"Character count: {len(result)}")
-        else:
-            st.warning("Please enter both subject and mood.")
+    prompt = f"Prompt: {subject_enhanced}\n{mood_enhanced}\n{style_enhanced}\n\nLoRA: {loras}\nWidth: {settings['width']}, Height: {settings['height']}, Steps: {settings['steps']}, Sampler: {settings['sampler']}, Scheduler: {settings['scheduler']}"
+    st.text_area("Final Prompt", prompt, height=300)
+    st.caption(f"Character count: {len(prompt)}")
+else:
+    st.warning("Enhance all three sections to preview the full prompt.")
