@@ -1,5 +1,6 @@
 import streamlit as st
 import random
+import json
 
 # --- Descriptors & templates ---
 descriptors = [
@@ -31,50 +32,36 @@ style_templates = [
     "Resembling the golden age of analog photography, the scene has tactile realism and cinematic depth."
 ]
 
+# --- Keyword storage ---
 if "style_keywords" not in st.session_state:
     st.session_state["style_keywords"] = {
-        "polaroid": [style_templates[3], "Soft hues and gentle contrast give the photo a nostalgic Polaroid character.", "Like a sun-faded instant film print, the image has warmth and imperfection."],
-        "1970": [style_templates[0], "Retro tones and grain texture place this scene squarely in the 1970s aesthetic."],
+        "polaroid": [style_templates[3]],
+        "1970": [style_templates[0]],
         "70s": [style_templates[0]],
-        "helmut": [style_templates[1], "Dramatic lighting and confident posture mirror Helmut Newton's signature editorial style."],
+        "helmut": [style_templates[1]],
         "newton": [style_templates[1]],
-        "irving": [style_templates[2], "Understated elegance and clarity recall the iconic style of Irving Penn."],
+        "irving": [style_templates[2]],
         "penn": [style_templates[2]],
-        "analog": [style_templates[4], "Grainy textures and soft highlights simulate the character of classic analog film."],
+        "analog": [style_templates[4]],
         "cinematic": [style_templates[4]]
     }
 
-mood_keywords = {
-    "beach": [
-        "The sunlight sparkles on the waves while sea breeze rustles the palms, creating a relaxed coastal mood.",
-        "Gentle ocean waves crash in the distance as warm light washes over the sandy shore.",
-        "A soft breeze carries the scent of salt and sunscreen across the sunlit beach scene."
-    ],
-    "night": [
-        "Moonlight softly illuminates the scene, casting long shadows across a quiet, nocturnal setting.",
-        "Dim streetlights flicker through misty air, creating an atmospheric and dreamlike mood."
-    ],
-    "urban": [
-        "Neon lights reflect off wet pavement, bringing vibrant energy to the bustling city backdrop.",
-        "Steel and glass architecture towers above a crowded street, buzzing with motion and light."
-    ],
-    "forest": [
-        "Dappled sunlight filters through thick trees, lending a serene, natural ambiance.",
-        "Pine needles carpet the quiet forest floor as rays of light pierce the canopy."
-    ],
-    "studio": [
-        "Softbox light sculpts the figure in a clean, controlled indoor setting.",
-        "A seamless backdrop and balanced lighting create a crisp, editorial-style composition."
-    ],
-    "mountain": [
-        "High-altitude sunlight filters through crisp, cool air, with jagged peaks as backdrop.",
-        "Wind stirs through alpine meadows, and clouds skim the snow-dusted ridges above."
-    ],
-    "desert": [
-        "Dry golden light creates long shadows on dusty terrain, evoking solitude and warmth.",
-        "Rippling dunes stretch to the horizon under an orange sky, evoking timeless isolation."
-    ]
-}
+if "mood_keywords" not in st.session_state:
+    st.session_state["mood_keywords"] = {
+        "beach": [
+            "The sunlight sparkles on the waves while sea breeze rustles the palms, creating a relaxed coastal mood.",
+            "Gentle ocean waves crash in the distance as warm light washes over the sandy shore.",
+            "A soft breeze carries the scent of salt and sunscreen across the sunlit beach scene."
+        ],
+        "night": [
+            "Moonlight softly illuminates the scene, casting long shadows across a quiet, nocturnal setting.",
+            "Dim streetlights flicker through misty air, creating an atmospheric and dreamlike mood."
+        ],
+        "urban": [
+            "Neon lights reflect off wet pavement, bringing vibrant energy to the bustling city backdrop.",
+            "Steel and glass architecture towers above a crowded street, buzzing with motion and light."
+        ]
+    }
 
 lora_sets = [
     ["plump_slim_edited_modified:0.40", "mature_youthful:0.35", "cinematic-light-lora-v2.0:0.30"],
@@ -132,7 +119,7 @@ def rewrite_subject(subject_input, tone="default", length="medium"):
     return base.capitalize()
 
 def enhance_mood(text):
-    for keyword, templates in mood_keywords.items():
+    for keyword, templates in st.session_state["mood_keywords"].items():
         if keyword in text.lower():
             return random.choice(templates)
     return random.choice(mood_templates)
@@ -149,11 +136,6 @@ def enhance_style(text):
 st.set_page_config(page_title="Flux AI Modular Prompt Generator")
 st.title("🤖 Modular Prompt Builder")
 
-# Initialize session state
-for key in ["subject_enhanced", "mood_enhanced", "style_enhanced"]:
-    if key not in st.session_state:
-        st.session_state[key] = ""
-
 # Input blocks
 st.header("1. Subject Outline")
 subject_input = st.text_input("Enter subject outline")
@@ -161,37 +143,102 @@ tone = st.selectbox("Select tone", ["default", "elegant", "playful", "moody"])
 length = st.selectbox("Description length", ["short", "medium", "long"])
 if st.button("Enhance Subject"):
     st.session_state.subject_enhanced = rewrite_subject(subject_input, tone, length)
-st.text_area("Enhanced Subject", st.session_state.subject_enhanced, height=100)
+st.text_area("Enhanced Subject", st.session_state.get("subject_enhanced", ""), height=100)
 
 st.header("2. Mood / Setting")
 mood_input = st.text_input("Enter mood/setting")
 if st.button("Enhance Mood"):
     st.session_state.mood_enhanced = enhance_mood(mood_input)
-st.text_area("Enhanced Mood", st.session_state.mood_enhanced, height=100)
+st.text_area("Enhanced Mood", st.session_state.get("mood_enhanced", ""), height=100)
 
 st.header("3. Style / Era Reference")
 style_input = st.text_input("Enter style reference (optional)")
 if st.button("Enhance Style"):
     st.session_state.style_enhanced = enhance_style(style_input)
-st.text_area("Enhanced Style", st.session_state.style_enhanced, height=100)
+st.text_area("Enhanced Style", st.session_state.get("style_enhanced", ""), height=100)
 
-# --- Add custom style keyword ---
+# Add custom style keyword
 st.header("4. Add Custom Style Keyword")
 new_keyword = st.text_input("New style keyword")
 new_description = st.text_area("Description for this style")
 if st.button("Add Style Keyword"):
     if new_keyword and new_description:
-        if new_keyword.lower() in st.session_state["style_keywords"]:
-            st.session_state["style_keywords"][new_keyword.lower()].append(new_description)
-        else:
-            st.session_state["style_keywords"][new_keyword.lower()] = [new_description]
+        st.session_state["style_keywords"].setdefault(new_keyword.lower(), []).append(new_description)
         st.success(f"Added or updated style keyword: {new_keyword}")
 
+# Add custom mood keyword
+st.header("5. Add Custom Mood Keyword")
+new_mood_keyword = st.text_input("New mood keyword")
+new_mood_description = st.text_area("Description for this mood")
+if st.button("Add Mood Keyword"):
+    if new_mood_keyword and new_mood_description:
+        st.session_state["mood_keywords"].setdefault(new_mood_keyword.lower(), []).append(new_mood_description)
+        st.success(f"Added or updated mood keyword: {new_mood_keyword}")
+
+# View all custom keywords
+st.header("6. Keyword Viewer")
+with st.expander("View all Style Keywords"):
+    for k, v in st.session_state["style_keywords"].items():
+        st.markdown(f"**{k}**: {', '.join(v)}")
+
+with st.expander("View all Mood Keywords"):
+    for k, v in st.session_state["mood_keywords"].items():
+        st.markdown(f"**{k}**: {', '.join(v)}")
+
+# Export keywords
+st.header("7. Save/Load Custom Keywords")
+if st.button("Save Keywords to File"):
+    keywords = {
+        "style_keywords": st.session_state["style_keywords"],
+        "mood_keywords": st.session_state["mood_keywords"]
+    }
+    with open("keywords.json", "w") as f:
+        json.dump(keywords, f, indent=2)
+    with open("keywords.json", "r") as f:
+        st.download_button("Download JSON", f, file_name="keywords.json")
+
+uploaded = st.file_uploader("Upload saved keywords JSON", type="json")
+if uploaded:
+    data = json.load(uploaded)
+    st.session_state["style_keywords"].update(data.get("style_keywords", {}))
+    st.session_state["mood_keywords"].update(data.get("mood_keywords", {}))
+    st.success("Keywords loaded successfully")
+
+# Reset keywords to default
+if st.button("Reset Keywords to Default"):
+    st.session_state["style_keywords"] = {
+        "polaroid": [style_templates[3]],
+        "1970": [style_templates[0]],
+        "70s": [style_templates[0]],
+        "helmut": [style_templates[1]],
+        "newton": [style_templates[1]],
+        "irving": [style_templates[2]],
+        "penn": [style_templates[2]],
+        "analog": [style_templates[4]],
+        "cinematic": [style_templates[4]]
+    }
+    st.session_state["mood_keywords"] = {
+        "beach": [
+            "The sunlight sparkles on the waves while sea breeze rustles the palms, creating a relaxed coastal mood.",
+            "Gentle ocean waves crash in the distance as warm light washes over the sandy shore.",
+            "A soft breeze carries the scent of salt and sunscreen across the sunlit beach scene."
+        ],
+        "night": [
+            "Moonlight softly illuminates the scene, casting long shadows across a quiet, nocturnal setting.",
+            "Dim streetlights flicker through misty air, creating an atmospheric and dreamlike mood."
+        ],
+        "urban": [
+            "Neon lights reflect off wet pavement, bringing vibrant energy to the bustling city backdrop.",
+            "Steel and glass architecture towers above a crowded street, buzzing with motion and light."
+        ]
+    }
+    st.success("Keywords reset to default.")
+
 # Final output
-st.header("5. Final Prompt Output")
-if all([st.session_state.subject_enhanced, st.session_state.mood_enhanced, st.session_state.style_enhanced]):
+st.header("8. Final Prompt Output")
+if all([st.session_state.get("subject_enhanced"), st.session_state.get("mood_enhanced"), st.session_state.get("style_enhanced")]):
     loras = ", ".join(f"<lora:{tag}>" for tag in random.choice(lora_sets))
-    prompt = f"Prompt: {st.session_state.subject_enhanced}\n{st.session_state.mood_enhanced}\n{st.session_state.style_enhanced}\n\nLoRA: {loras}\nWidth: {settings['width']}, Height: {settings['height']}, Steps: {settings['steps']}, Sampler: {settings['sampler']}, Scheduler: {settings['scheduler']}"
+    prompt = f"Prompt: {st.session_state['subject_enhanced']}\n{st.session_state['mood_enhanced']}\n{st.session_state['style_enhanced']}\n\nLoRA: {loras}\nWidth: {settings['width']}, Height: {settings['height']}, Steps: {settings['steps']}, Sampler: {settings['sampler']}, Scheduler: {settings['scheduler']}"
     st.text_area("Final Prompt", prompt, height=300)
     st.caption(f"Character count: {len(prompt)}")
 else:
