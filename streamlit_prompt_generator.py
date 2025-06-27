@@ -39,18 +39,39 @@ settings = {
     "scheduler": "simple"
 }
 
+# --- Subject Enhancer ---
+def rewrite_subject(subject_input):
+    elements = [e.strip() for e in subject_input.split(',') if e.strip()]
+    base = "A woman"
+
+    appearance = []
+    clothing = []
+    for word in elements:
+        if any(kw in word.lower() for kw in ["hair", "skin", "face", "eyes", "lips"]):
+            appearance.append(word)
+        elif any(kw in word.lower() for kw in ["sweater", "dress", "shirt", "blouse", "skirt", "pants"]):
+            clothing.append(word)
+        else:
+            appearance.append(word)
+
+    phrase = f"{base}"
+    if appearance:
+        phrase += " with " + ", ".join(appearance)
+    if clothing:
+        phrase += " wearing " + ", ".join(clothing)
+
+    phrase += ", featuring " + ", ".join(random.sample(descriptors, 3)) + "."
+    return phrase.capitalize()
+
 # --- Prompt builders ---
 def build_prompt(subject, mood, style):
-    desc_sample = random.sample(descriptors, 4)
-    subject_line = f"{subject.strip().capitalize()}, described with {', '.join(desc_sample)}."
+    subject_line = rewrite_subject(subject)
 
-    # Expand or enhance mood line
     if len(mood.strip().split()) < 6:
         mood_line = random.choice(mood_templates)
     else:
         mood_line = mood.strip().capitalize()
 
-    # Expand or randomize style line
     if style.strip() == "":
         style_line = random.choice(style_templates)
     elif len(style.strip().split()) < 5:
