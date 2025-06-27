@@ -183,3 +183,4 @@ if all([st.session_state.subject_enhanced, st.session_state.mood_enhanced, st.se
     st.caption(f"Character count: {len(prompt)}")
 else:
     st.warning("Enhance all three sections to preview the full prompt.")
+    
