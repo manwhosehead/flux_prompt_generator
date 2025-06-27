@@ -9,6 +9,11 @@ descriptors = [
     "smooth, even-toned complexion", "graceful posture", "long, delicate fingers"
 ]
 
+personality_traits = [
+    "a quiet confidence", "a mysterious allure", "an introspective nature",
+    "an elegant demeanor", "a playful spirit", "a calm presence"
+]
+
 mood_templates = [
     "The soft golden-hour light warms the scene, casting long shadows across the ground.",
     "A cool morning haze envelops the surroundings, lending a quiet, introspective atmosphere.",
@@ -39,33 +44,52 @@ settings = {
     "scheduler": "simple"
 }
 
-# --- Subject Enhancer ---
-def rewrite_subject(subject_input):
+# --- Advanced Subject Enhancer ---
+def rewrite_subject(subject_input, tone="default", length="medium"):
     elements = [e.strip() for e in subject_input.split(',') if e.strip()]
-    base = "A woman"
+    appearance, clothing, modifiers = [], [], []
 
-    appearance = []
-    clothing = []
     for word in elements:
-        if any(kw in word.lower() for kw in ["hair", "skin", "face", "eyes", "lips"]):
+        lw = word.lower()
+        if any(kw in lw for kw in ["hair", "skin", "eyes", "lips", "face"]):
             appearance.append(word)
-        elif any(kw in word.lower() for kw in ["sweater", "dress", "shirt", "blouse", "skirt", "pants"]):
+        elif any(kw in lw for kw in ["sweater", "dress", "shirt", "blouse", "skirt", "pants"]):
             clothing.append(word)
+        elif lw in ["slender", "curvy", "athletic", "petite", "tall", "beauty", "beautiful"]:
+            modifiers.append(word)
         else:
             appearance.append(word)
 
-    phrase = f"{base}"
-    if appearance:
-        phrase += " with " + ", ".join(appearance)
-    if clothing:
-        phrase += " wearing " + ", ".join(clothing)
+    # Compose base
+    base = "A"
+    if modifiers:
+        joined_mods = ", ".join(modifiers[:-1]) + (" and " + modifiers[-1] if len(modifiers) > 1 else modifiers[0])
+        base += f" {joined_mods} woman"
+    else:
+        base += " woman"
 
-    phrase += ", featuring " + ", ".join(random.sample(descriptors, 3)) + "."
-    return phrase.capitalize()
+    if appearance:
+        base += " with " + ", ".join(appearance)
+    if clothing:
+        base += ", dressed in " + ", ".join(clothing)
+
+    d_count = 2 if length == "short" else 3 if length == "medium" else 4
+    base += ", featuring " + ", ".join(random.sample(descriptors, d_count))
+    base += ", and expressing " + random.choice(personality_traits) + "."
+
+    # Tone adjustment
+    if tone == "elegant":
+        base = base.replace("woman", "elegant woman")
+    elif tone == "moody":
+        base = base.replace("woman", "melancholic woman")
+    elif tone == "playful":
+        base = base.replace("woman", "playful woman")
+
+    return base.capitalize()
 
 # --- Prompt builders ---
-def build_prompt(subject, mood, style):
-    subject_line = rewrite_subject(subject)
+def build_prompt(subject, mood, style, tone="default", length="medium"):
+    subject_line = rewrite_subject(subject, tone, length)
 
     if len(mood.strip().split()) < 6:
         mood_line = random.choice(mood_templates)
@@ -82,12 +106,14 @@ def build_prompt(subject, mood, style):
 
     loras = ", ".join(f"<lora:{tag}>" for tag in random.choice(lora_sets))
 
-    return f"""
+    full_prompt = f"""
 Prompt: {subject_line}\n{mood_line}\n{style_line}
 
 LoRA: {loras}
 Width: {settings['width']}, Height: {settings['height']}, Steps: {settings['steps']}, Sampler: {settings['sampler']}, Scheduler: {settings['scheduler']}
 """.strip()
+
+    return full_prompt
 
 # --- Streamlit UI ---
 st.set_page_config(page_title="Flux AI Prompt Generator")
@@ -100,16 +126,21 @@ if mode == "Suggest Prompt":
         subject = "A young woman"
         mood = random.choice(mood_templates)
         style = random.choice(style_templates)
-        st.text_area("Generated Prompt", build_prompt(subject, mood, style), height=300)
+        prompt = build_prompt(subject, mood, style)
+        st.text_area("Generated Prompt", prompt, height=300)
+        st.caption(f"Character count: {len(prompt)}")
 
 elif mode == "Enhance My Prompt":
     subject_input = st.text_input("Enter subject outline")
     mood_input = st.text_input("Enter mood/setting")
     style_input = st.text_input("Optional: Style or era reference")
+    tone = st.selectbox("Select tone", ["default", "elegant", "playful", "moody"])
+    length = st.selectbox("Description length", ["short", "medium", "long"])
 
     if st.button("Enhance Prompt"):
         if subject_input and mood_input:
-            result = build_prompt(subject_input, mood_input, style_input)
+            result = build_prompt(subject_input, mood_input, style_input, tone, length)
             st.text_area("Enhanced Prompt", result, height=300)
+            st.caption(f"Character count: {len(result)}")
         else:
             st.warning("Please enter both subject and mood.")
