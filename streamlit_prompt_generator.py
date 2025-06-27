@@ -100,35 +100,37 @@ def enhance_style(text):
 st.set_page_config(page_title="Flux AI Modular Prompt Generator")
 st.title("🤖 Modular Prompt Builder")
 
+# Initialize session state
+for key in ["subject_enhanced", "mood_enhanced", "style_enhanced"]:
+    if key not in st.session_state:
+        st.session_state[key] = ""
+
 # Input blocks
 st.header("1. Subject Outline")
 subject_input = st.text_input("Enter subject outline")
 tone = st.selectbox("Select tone", ["default", "elegant", "playful", "moody"])
 length = st.selectbox("Description length", ["short", "medium", "long"])
-subject_enhanced = ""
 if st.button("Enhance Subject"):
-    subject_enhanced = rewrite_subject(subject_input, tone, length)
-    st.text_area("Enhanced Subject", subject_enhanced, height=100)
+    st.session_state.subject_enhanced = rewrite_subject(subject_input, tone, length)
+st.text_area("Enhanced Subject", st.session_state.subject_enhanced, height=100)
 
 st.header("2. Mood / Setting")
 mood_input = st.text_input("Enter mood/setting")
-mood_enhanced = ""
 if st.button("Enhance Mood"):
-    mood_enhanced = enhance_mood(mood_input)
-    st.text_area("Enhanced Mood", mood_enhanced, height=100)
+    st.session_state.mood_enhanced = enhance_mood(mood_input)
+st.text_area("Enhanced Mood", st.session_state.mood_enhanced, height=100)
 
 st.header("3. Style / Era Reference")
 style_input = st.text_input("Enter style reference (optional)")
-style_enhanced = ""
 if st.button("Enhance Style"):
-    style_enhanced = enhance_style(style_input)
-    st.text_area("Enhanced Style", style_enhanced, height=100)
+    st.session_state.style_enhanced = enhance_style(style_input)
+st.text_area("Enhanced Style", st.session_state.style_enhanced, height=100)
 
 # Final output
 st.header("4. Final Prompt Output")
-if subject_enhanced and mood_enhanced and style_enhanced:
+if all([st.session_state.subject_enhanced, st.session_state.mood_enhanced, st.session_state.style_enhanced]):
     loras = ", ".join(f"<lora:{tag}>" for tag in random.choice(lora_sets))
-    prompt = f"Prompt: {subject_enhanced}\n{mood_enhanced}\n{style_enhanced}\n\nLoRA: {loras}\nWidth: {settings['width']}, Height: {settings['height']}, Steps: {settings['steps']}, Sampler: {settings['sampler']}, Scheduler: {settings['scheduler']}"
+    prompt = f"Prompt: {st.session_state.subject_enhanced}\n{st.session_state.mood_enhanced}\n{st.session_state.style_enhanced}\n\nLoRA: {loras}\nWidth: {settings['width']}, Height: {settings['height']}, Steps: {settings['steps']}, Sampler: {settings['sampler']}, Scheduler: {settings['scheduler']}"
     st.text_area("Final Prompt", prompt, height=300)
     st.caption(f"Character count: {len(prompt)}")
 else:
