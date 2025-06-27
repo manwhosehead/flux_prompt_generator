@@ -11,7 +11,8 @@ descriptors = [
 
 personality_traits = [
     "a quiet confidence", "a mysterious allure", "an introspective nature",
-    "an elegant demeanor", "a playful spirit", "a calm presence"
+    "an elegant demeanor", "a playful spirit", "a calm presence",
+    "a charismatic energy", "a poised elegance", "a whimsical charm"
 ]
 
 mood_templates = [
@@ -30,26 +31,48 @@ style_templates = [
     "Resembling the golden age of analog photography, the scene has tactile realism and cinematic depth."
 ]
 
-mood_keywords = {
-    "beach": "The sunlight sparkles on the waves while sea breeze rustles the palms, creating a relaxed coastal mood.",
-    "night": "Moonlight softly illuminates the scene, casting long shadows across a quiet, nocturnal setting.",
-    "urban": "Neon lights reflect off wet pavement, bringing vibrant energy to the bustling city backdrop.",
-    "forest": "Dappled sunlight filters through thick trees, lending a serene, natural ambiance.",
-    "studio": "Softbox light sculpts the figure in a clean, controlled indoor setting.",
-    "mountain": "High-altitude sunlight filters through crisp, cool air, with jagged peaks as backdrop.",
-    "desert": "Dry golden light creates long shadows on dusty terrain, evoking solitude and warmth."
+style_keywords = {
+    "polaroid": [style_templates[3], "Soft hues and gentle contrast give the photo a nostalgic Polaroid character.", "Like a sun-faded instant film print, the image has warmth and imperfection."],
+    "1970": [style_templates[0], "Retro tones and grain texture place this scene squarely in the 1970s aesthetic."],
+    "70s": [style_templates[0]],
+    "helmut": [style_templates[1], "Dramatic lighting and confident posture mirror Helmut Newton's signature editorial style."],
+    "newton": [style_templates[1]],
+    "irving": [style_templates[2], "Understated elegance and clarity recall the iconic style of Irving Penn."],
+    "penn": [style_templates[2]],
+    "analog": [style_templates[4], "Grainy textures and soft highlights simulate the character of classic analog film."],
+    "cinematic": [style_templates[4]]
 }
 
-style_keywords = {
-    "polaroid": style_templates[3],
-    "1970": style_templates[0],
-    "70s": style_templates[0],
-    "helmut": style_templates[1],
-    "newton": style_templates[1],
-    "irving": style_templates[2],
-    "penn": style_templates[2],
-    "analog": style_templates[4],
-    "cinematic": style_templates[4]
+mood_keywords = {
+    "beach": [
+        "The sunlight sparkles on the waves while sea breeze rustles the palms, creating a relaxed coastal mood.",
+        "Gentle ocean waves crash in the distance as warm light washes over the sandy shore.",
+        "A soft breeze carries the scent of salt and sunscreen across the sunlit beach scene."
+    ],
+    "night": [
+        "Moonlight softly illuminates the scene, casting long shadows across a quiet, nocturnal setting.",
+        "Dim streetlights flicker through misty air, creating an atmospheric and dreamlike mood."
+    ],
+    "urban": [
+        "Neon lights reflect off wet pavement, bringing vibrant energy to the bustling city backdrop.",
+        "Steel and glass architecture towers above a crowded street, buzzing with motion and light."
+    ],
+    "forest": [
+        "Dappled sunlight filters through thick trees, lending a serene, natural ambiance.",
+        "Pine needles carpet the quiet forest floor as rays of light pierce the canopy."
+    ],
+    "studio": [
+        "Softbox light sculpts the figure in a clean, controlled indoor setting.",
+        "A seamless backdrop and balanced lighting create a crisp, editorial-style composition."
+    ],
+    "mountain": [
+        "High-altitude sunlight filters through crisp, cool air, with jagged peaks as backdrop.",
+        "Wind stirs through alpine meadows, and clouds skim the snow-dusted ridges above."
+    ],
+    "desert": [
+        "Dry golden light creates long shadows on dusty terrain, evoking solitude and warmth.",
+        "Rippling dunes stretch to the horizon under an orange sky, evoking timeless isolation."
+    ]
 }
 
 lora_sets = [
@@ -108,15 +131,15 @@ def rewrite_subject(subject_input, tone="default", length="medium"):
     return base.capitalize()
 
 def enhance_mood(text):
-    for keyword, template in mood_keywords.items():
+    for keyword, templates in mood_keywords.items():
         if keyword in text.lower():
-            return template
+            return random.choice(templates)
     return random.choice(mood_templates)
 
 def enhance_style(text):
-    for keyword, template in style_keywords.items():
+    for keyword, templates in style_keywords.items():
         if keyword in text.lower():
-            return template
+            return random.choice(templates)
     if text.strip():
         return text.strip().capitalize()
     return random.choice(style_templates)
