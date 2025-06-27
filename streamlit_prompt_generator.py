@@ -31,17 +31,18 @@ style_templates = [
     "Resembling the golden age of analog photography, the scene has tactile realism and cinematic depth."
 ]
 
-style_keywords = {
-    "polaroid": [style_templates[3], "Soft hues and gentle contrast give the photo a nostalgic Polaroid character.", "Like a sun-faded instant film print, the image has warmth and imperfection."],
-    "1970": [style_templates[0], "Retro tones and grain texture place this scene squarely in the 1970s aesthetic."],
-    "70s": [style_templates[0]],
-    "helmut": [style_templates[1], "Dramatic lighting and confident posture mirror Helmut Newton's signature editorial style."],
-    "newton": [style_templates[1]],
-    "irving": [style_templates[2], "Understated elegance and clarity recall the iconic style of Irving Penn."],
-    "penn": [style_templates[2]],
-    "analog": [style_templates[4], "Grainy textures and soft highlights simulate the character of classic analog film."],
-    "cinematic": [style_templates[4]]
-}
+if "style_keywords" not in st.session_state:
+    st.session_state["style_keywords"] = {
+        "polaroid": [style_templates[3], "Soft hues and gentle contrast give the photo a nostalgic Polaroid character.", "Like a sun-faded instant film print, the image has warmth and imperfection."],
+        "1970": [style_templates[0], "Retro tones and grain texture place this scene squarely in the 1970s aesthetic."],
+        "70s": [style_templates[0]],
+        "helmut": [style_templates[1], "Dramatic lighting and confident posture mirror Helmut Newton's signature editorial style."],
+        "newton": [style_templates[1]],
+        "irving": [style_templates[2], "Understated elegance and clarity recall the iconic style of Irving Penn."],
+        "penn": [style_templates[2]],
+        "analog": [style_templates[4], "Grainy textures and soft highlights simulate the character of classic analog film."],
+        "cinematic": [style_templates[4]]
+    }
 
 mood_keywords = {
     "beach": [
@@ -137,7 +138,7 @@ def enhance_mood(text):
     return random.choice(mood_templates)
 
 def enhance_style(text):
-    for keyword, templates in style_keywords.items():
+    for keyword, templates in st.session_state["style_keywords"].items():
         if keyword in text.lower():
             return random.choice(templates)
     if text.strip():
@@ -174,8 +175,20 @@ if st.button("Enhance Style"):
     st.session_state.style_enhanced = enhance_style(style_input)
 st.text_area("Enhanced Style", st.session_state.style_enhanced, height=100)
 
+# --- Add custom style keyword ---
+st.header("4. Add Custom Style Keyword")
+new_keyword = st.text_input("New style keyword")
+new_description = st.text_area("Description for this style")
+if st.button("Add Style Keyword"):
+    if new_keyword and new_description:
+        if new_keyword.lower() in st.session_state["style_keywords"]:
+            st.session_state["style_keywords"][new_keyword.lower()].append(new_description)
+        else:
+            st.session_state["style_keywords"][new_keyword.lower()] = [new_description]
+        st.success(f"Added or updated style keyword: {new_keyword}")
+
 # Final output
-st.header("4. Final Prompt Output")
+st.header("5. Final Prompt Output")
 if all([st.session_state.subject_enhanced, st.session_state.mood_enhanced, st.session_state.style_enhanced]):
     loras = ", ".join(f"<lora:{tag}>" for tag in random.choice(lora_sets))
     prompt = f"Prompt: {st.session_state.subject_enhanced}\n{st.session_state.mood_enhanced}\n{st.session_state.style_enhanced}\n\nLoRA: {loras}\nWidth: {settings['width']}, Height: {settings['height']}, Steps: {settings['steps']}, Sampler: {settings['sampler']}, Scheduler: {settings['scheduler']}"
@@ -183,4 +196,3 @@ if all([st.session_state.subject_enhanced, st.session_state.mood_enhanced, st.se
     st.caption(f"Character count: {len(prompt)}")
 else:
     st.warning("Enhance all three sections to preview the full prompt.")
-    
