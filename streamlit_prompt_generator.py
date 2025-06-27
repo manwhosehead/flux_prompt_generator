@@ -187,6 +187,19 @@ with st.expander("View all Mood Keywords"):
 
 # Export keywords
 st.header("7. Save/Load Custom Keywords")
+
+# Export keywords to CSV
+if st.button("Export Keywords to CSV"):
+    keyword_rows = []
+    for k, v in st.session_state["style_keywords"].items():
+        for desc in v:
+            keyword_rows.append({"type": "style", "keyword": k, "description": desc})
+    for k, v in st.session_state["mood_keywords"].items():
+        for desc in v:
+            keyword_rows.append({"type": "mood", "keyword": k, "description": desc})
+    df = pd.DataFrame(keyword_rows)
+    csv_bytes = df.to_csv(index=False).encode('utf-8')
+    st.download_button("Download Keywords as CSV", data=csv_bytes, file_name="keywords_export.csv", mime="text/csv")
 if st.button("Save Keywords to File"):
     keywords = {
         "style_keywords": st.session_state["style_keywords"],
@@ -203,6 +216,21 @@ if uploaded:
     st.session_state["style_keywords"].update(data.get("style_keywords", {}))
     st.session_state["mood_keywords"].update(data.get("mood_keywords", {}))
     st.success("Keywords loaded successfully")
+
+# CSV upload alternative
+st.subheader("Or upload keywords as CSV")
+csv_file = st.file_uploader("Upload custom keywords CSV", type="csv", key="csv")
+if csv_file is not None:
+    csv_df = pd.read_csv(csv_file)
+    style_kw, mood_kw = {}, {}
+    for _, row in csv_df.iterrows():
+        if row["type"] == "style":
+            style_kw.setdefault(row["keyword"].lower(), []).append(row["description"])
+        elif row["type"] == "mood":
+            mood_kw.setdefault(row["keyword"].lower(), []).append(row["description"])
+    st.session_state["style_keywords"].update(style_kw)
+    st.session_state["mood_keywords"].update(mood_kw)
+    st.success("Keywords loaded from CSV successfully.")
 
 # Reset keywords to default
 if st.button("Reset Keywords to Default"):
