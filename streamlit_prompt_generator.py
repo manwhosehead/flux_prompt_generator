@@ -30,6 +30,28 @@ style_templates = [
     "Resembling the golden age of analog photography, the scene has tactile realism and cinematic depth."
 ]
 
+mood_keywords = {
+    "beach": "The sunlight sparkles on the waves while sea breeze rustles the palms, creating a relaxed coastal mood.",
+    "night": "Moonlight softly illuminates the scene, casting long shadows across a quiet, nocturnal setting.",
+    "urban": "Neon lights reflect off wet pavement, bringing vibrant energy to the bustling city backdrop.",
+    "forest": "Dappled sunlight filters through thick trees, lending a serene, natural ambiance.",
+    "studio": "Softbox light sculpts the figure in a clean, controlled indoor setting.",
+    "mountain": "High-altitude sunlight filters through crisp, cool air, with jagged peaks as backdrop.",
+    "desert": "Dry golden light creates long shadows on dusty terrain, evoking solitude and warmth."
+}
+
+style_keywords = {
+    "polaroid": style_templates[3],
+    "1970": style_templates[0],
+    "70s": style_templates[0],
+    "helmut": style_templates[1],
+    "newton": style_templates[1],
+    "irving": style_templates[2],
+    "penn": style_templates[2],
+    "analog": style_templates[4],
+    "cinematic": style_templates[4]
+}
+
 lora_sets = [
     ["plump_slim_edited_modified:0.40", "mature_youthful:0.35", "cinematic-light-lora-v2.0:0.30"],
     ["sarabree:0.35", "old-young:0.30", "fluxabel:0.30"],
@@ -53,7 +75,7 @@ def rewrite_subject(subject_input, tone="default", length="medium"):
         lw = word.lower()
         if any(kw in lw for kw in ["hair", "skin", "eyes", "lips", "face"]):
             appearance.append(word)
-        elif any(kw in lw for kw in ["sweater", "dress", "shirt", "blouse", "skirt", "pants"]):
+        elif any(kw in lw for kw in ["sweater", "dress", "shirt", "blouse", "skirt", "pants", "bikini", "cape"]):
             clothing.append(word)
         elif lw in ["slender", "curvy", "athletic", "petite", "tall", "beauty", "beautiful"]:
             modifiers.append(word)
@@ -86,15 +108,18 @@ def rewrite_subject(subject_input, tone="default", length="medium"):
     return base.capitalize()
 
 def enhance_mood(text):
-    return random.choice(mood_templates) if len(text.strip().split()) < 6 else text.strip().capitalize()
+    for keyword, template in mood_keywords.items():
+        if keyword in text.lower():
+            return template
+    return random.choice(mood_templates)
 
 def enhance_style(text):
-    if text.strip() == "":
-        return random.choice(style_templates)
-    elif len(text.strip().split()) < 5:
-        match = [s for s in style_templates if text.lower() in s.lower()]
-        return match[0] if match else random.choice(style_templates)
-    return text.strip().capitalize()
+    for keyword, template in style_keywords.items():
+        if keyword in text.lower():
+            return template
+    if text.strip():
+        return text.strip().capitalize()
+    return random.choice(style_templates)
 
 # --- UI ---
 st.set_page_config(page_title="Flux AI Modular Prompt Generator")
